@@ -6,10 +6,10 @@ using UnityEngine;
 
 namespace AdVd.Graphs
 {
-    [CreateAssetMenu(fileName = "New Graph", menuName = "Graph")]
+    //[CreateAssetMenu(fileName = "New Graph", menuName = "Graph")]
     public class Graph : ScriptableObject, IEnumerable<Vector2>
     {
-        internal int hash;
+        //internal int hash;
 
         public DrawMode drawMode = DrawMode.Lines;
         public Color color = Color.white;
@@ -52,7 +52,7 @@ namespace AdVd.Graphs
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            throw new NotImplementedException();
+            return GetEnumerator();
         }
 
         //TODO scale & offset?
@@ -70,11 +70,12 @@ namespace AdVd.Graphs
             //Debug.Log("Enabled " + name);
             if (buffer == null) buffer = new ComputeBuffer(Mathf.Max(1, data.Length), Marshal.SizeOf(typeof(Vector2)), ComputeBufferType.Default);
             OnValidate();
+            AddToDictionary();
         }
 
         void OnValidate()
         {
-            hash = name.GetHashCode();
+            //hash = name.GetHashCode();
             //Debug.Log("Validated " + name);
             DumpToBuffer();
         }
@@ -91,7 +92,7 @@ namespace AdVd.Graphs
 
         private void OnDestroy()//This may not be called on delete, GarbageCollector releases the buffer
         {
-            Debug.Log("Destroyed " + name);
+            //Debug.Log("Destroyed " + name);
             if (buffer != null)
             {
                 buffer.Release();
@@ -120,30 +121,78 @@ namespace AdVd.Graphs
             }
         }
 
+        private static Dictionary<string, Graph> loadedGraphs = new Dictionary<string, Graph>();
+
+        void AddToDictionary()
+        {
+            //if (!loadedGraphs.ContainsKey(name) || loadedGraphs[name] == null)
+            //{
+            //    loadedGraphs.Add(name, this);
+            //}
+            loadedGraphs[name] = this;
+        }
+
 #if UNITY_EDITOR
         static System.Reflection.MethodInfo focusDataMethod;
-        static System.Reflection.MethodInfo getGraphListMethod;//TODO replace with editor independent list?
+        //static System.Reflection.MethodInfo getGraphListMethod;//TODO replace with editor independent list?
         
         [RuntimeInitializeOnLoadMethod]
         static void Init() {
             System.Reflection.Assembly editorAssembly = Array.Find(AppDomain.CurrentDomain.GetAssemblies(), a => a.FullName.StartsWith("Assembly-CSharp-Editor,")); // ',' included to ignore  Assembly-CSharp-Editor-FirstPass
             Type utilityType = Array.Find(editorAssembly.GetTypes(), t => t.FullName.Contains("GraphViewer"));
             focusDataMethod = utilityType.GetMethod("FocusData", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-            getGraphListMethod = utilityType.GetMethod("GetGraphList", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
+            //getGraphListMethod = utilityType.GetMethod("GetGraphList", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
             //.Invoke(obj: null, parameters: null);
+        }
+
+        [UnityEditor.MenuItem("Assets/Create/Graph", priority = 0)]
+        public static Graph CreateGraphAsset()
+        {
+            Graph g = CreateInstance<Graph>();
+            UnityEditor.ProjectWindowUtil.CreateAsset(g, "New Graph.asset");
+            return g;
+            //PolygonSet ps = PolygonSet.CreatePolygonSet();
+            //UnityEditor.ProjectWindowUtil.CreateAsset(ps, "New PolygonSet.asset");
+        }
+        
+        public static Graph CreateGraphWithName(string name) {
+            //TODO use in GraphViewer
+            Graph g = CreateInstance<Graph>();
+            g.name = name;
+            g.AddToDictionary();
+            UnityEditor.AssetDatabase.CreateAsset(g, "Assets/AdVdGraphs/Graphs/" + name + ".asset");
+            
+            return g;
         }
 #endif
 
         public static Graph FindGraph(string name) {
-#if UNITY_EDITOR
-            int hash = name.GetHashCode();
+            //#if UNITY_EDITOR
+            //int hash = name.GetHashCode();
+            //List<Graph> list = (List<Graph>)getGraphListMethod.Invoke(obj: null, parameters: null);
+            //return list != null ? list.Find(g => g.hash == hash && g.name == name) : null;
 
-            List<Graph> list = (List<Graph>)getGraphListMethod.Invoke(obj: null, parameters: null);
-
-            return list != null ? list.Find(g => g.hash == hash && g.name == name) : null;
-#else
-            return null;//TODO viewer independent search
-#endif
+            if (loadedGraphs.ContainsKey(name))
+            {
+                return loadedGraphs[name];
+            }
+            else
+            {
+                Debug.LogWarningFormat("Graph {0} not found.", name);
+                //loadedGraphs.Add(name, null);
+                loadedGraphs[name] = null;
+                //                Graph g = null;
+                //#if UNITY_EDITOR
+                //                bool result = UnityEditor.EditorUtility.DisplayDialog("Create Graph", "Create Graph '" + name + "'?", "Ok", "Cancel");
+                //                if (result) g = CreateGraphWithName(name);
+                //                //loadedGraphs.Add(name, g);
+                //#endif
+                //                return g;
+                return null;
+            }
+//#else
+//            return null;//TODO viewer independent search
+//#endif
         }
         
         public static void AddData(string name, float value) {

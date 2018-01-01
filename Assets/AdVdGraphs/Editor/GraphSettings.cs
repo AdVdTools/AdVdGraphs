@@ -27,9 +27,7 @@ namespace AdVd.Graphs
                 return instance;
             }
         }
-
-        public int graphMaxDataSize = 65536;
-
+        
         public Texture2D defaultPointMarker;
 
         public bool autoAdjustX, autoAdjustY;//Resize if posible or move to show latest data

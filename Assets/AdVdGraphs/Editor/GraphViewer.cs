@@ -48,7 +48,7 @@ namespace AdVd.Graphs
         {
             if (mode == PlayModeStateChange.EnteredPlayMode)
             {
-                Debug.Log("Clear");
+                //Debug.Log("Clear");
                 foreach (Graph g in graphs) if (g.clearOnPlay) g.Clear();
             }
         }
@@ -171,14 +171,15 @@ namespace AdVd.Graphs
         }
 
         Graph NewGraph() {
-            string path = EditorUtility.SaveFilePanelInProject("Create Graph", "New Graph", "asset", "New Graph location");
+            return Graph.CreateGraphAsset();
+            //string path = EditorUtility.SaveFilePanelInProject("Create Graph", "New Graph", "asset", "New Graph location");
 
-            if (string.IsNullOrEmpty(path)) return null;
+            //if (string.IsNullOrEmpty(path)) return null;
 
-            Graph newGraph = CreateInstance<Graph>();
-            AssetDatabase.CreateAsset(newGraph, path);
+            //Graph newGraph = CreateInstance<Graph>();
+            //AssetDatabase.CreateAsset(newGraph, path);
 
-            return newGraph;
+            //return newGraph;
         }
 
         [SerializeField] DivisionSlider divisions;
@@ -250,12 +251,16 @@ namespace AdVd.Graphs
         void GraphListGUI(Rect rect)
         {
             serializedWindow.Update();
-
-            //GUI.DrawTexture(rect, Texture2D.whiteTexture);
+            
             graphsRList.DoList(rect);
+
+            //int i = 0;
+            //foreach (var kvp in Graph.loadedGraphs) if (kvp.Value) EditorGUILayout.LabelField((i++) + " " + kvp.Key + " " + kvp.Value.name);
 
             Event e = Event.current;
             if (e != null) {
+                if (e.type == EventType.KeyDown && e.keyCode == KeyCode.Delete) graphsRList.onRemoveCallback(graphsRList);
+
                 if (e.type == EventType.ExecuteCommand && e.commandName == "ObjectSelectorUpdated" && EditorGUIUtility.GetObjectPickerControlID() == 0)
                 {
                     Graph graph = EditorGUIUtility.GetObjectPickerObject() as Graph;
@@ -296,13 +301,11 @@ namespace AdVd.Graphs
 
         void GraphDisplayGUI(Rect rect)
         {
-            EditorGUI.DrawRect(new Rect(rect.x - 1, rect.y - 1,
-                                        rect.width + 2, rect.height + 2), new Color(0.6f, 0.6f, 0.6f));
             EditorGUI.DrawRect(rect, new Color(0.3f, 0.3f, 0.3f));
             
             // Draw graph
             if (graphCamera == null) Debug.LogWarning("Camera is null");
-            else if (Event.current.type != EventType.Layout)
+            else// if (Event.current.type != EventType.Layout)
             {
                 SetCamera();
                 Handles.SetCamera(graphCamera);
@@ -398,23 +401,23 @@ namespace AdVd.Graphs
                 //GUI.DrawTexture(new Rect(rect.position - new Vector2(-20, -50), new Vector2(16, 16)), defaultPointMarker);
                 //Graphics.DrawMesh(GraphSettings.Instance.testMesh, baseMatrix, GraphSettings.Instance.testMaterial, 1, graphCamera, 0);
 
-                foreach (Graph g in graphs)
-                {
-                    if (g.DrawPoints)
-                    {
-                        //graphMaterial.SetTexture("_MainTex", g.Marker);
+                //foreach (Graph g in graphs)
+                //{
+                //    if (g.DrawPoints)
+                //    {
+                //        //graphMaterial.SetTexture("_MainTex", g.Marker);
 
-                        //graphMaterial.SetPass(3);
-                        //Graphics.DrawProcedural(MeshTopology.Quads, g.buffer.count * 6);
+                //        //graphMaterial.SetPass(3);
+                //        //Graphics.DrawProcedural(MeshTopology.Quads, g.buffer.count * 6);
 
-                        //for (int i = 0; i < g.data.Length; ++i)
-                        //{
-                        //    Vector2 point = HandleUtility.WorldToGUIPoint(g.data[i]);
-                        //    Graphics.DrawTexture(new Rect(point - new Vector2(8, 8), new Vector2(16, 16)), defaultPointMarker, new Rect(0, 0, 32, 16), 0, 0, 0, 0, g.color);
-                        //    //Graphics.DrawMeshNow(Quad);
-                        //}
-                    }
-                }
+                //        //for (int i = 0; i < g.data.Length; ++i)
+                //        //{
+                //        //    Vector2 point = HandleUtility.WorldToGUIPoint(g.data[i]);
+                //        //    Graphics.DrawTexture(new Rect(point - new Vector2(8, 8), new Vector2(16, 16)), defaultPointMarker, new Rect(0, 0, 32, 16), 0, 0, 0, 0, g.color);
+                //        //    //Graphics.DrawMeshNow(Quad);
+                //        //}
+                //    }
+                //}
                 //graphCamera.Render();
                 Handles.EndGUI();
 
@@ -433,14 +436,12 @@ namespace AdVd.Graphs
                 else if (Event.current.type == EventType.ScrollWheel && rect.Contains(Event.current.mousePosition))
                 {
                     float wheelMultiplier = Mathf.Exp(HandleUtility.niceMouseDeltaZoom * 0.03f);
-                    Debug.Log(wheelMultiplier + " " + CtrlOrCmd);
                     Vector2 mousePosition = Event.current.mousePosition;
                         
                     if (!Event.current.shift)
                     {
                         float x = Mathf.InverseLerp(rect.xMin, rect.xMax, mousePosition.x);
                         float deltaW = (1 - wheelMultiplier) * Mathf.Max(1e-3f, graphRect.width);
-                        Debug.Log(x + " " + deltaW);
                         graphRect.xMin -= deltaW * x;
                         graphRect.xMax += deltaW * (1 - x);
 
@@ -583,16 +584,16 @@ namespace AdVd.Graphs
         {
             GenericMenu gm = new GenericMenu();
             gm.AddItem(new GUIContent("Settings Inspector"), false, () => Selection.activeObject = settings);
+            gm.AddItem(new GUIContent("Reset View"), false, () => graphRect = new Rect(-0.5f, -0.5f, 1f, 1f));
             gm.AddItem(new GUIContent("TEST"), false, () => Selection.activeObject = this);
             gm.AddItem(new GUIContent("TEST2"), false, () => Selection.activeObject = graphCamera.gameObject);
-            gm.AddItem(new GUIContent("MAXIMIZE"), false, () => maximized = !maximized);
             return gm;
         }
 
-        public static List<Graph> GetGraphList() {
-            if (current != null) return current.graphs;
-            else return null;
-        }
+        //public static List<Graph> GetGraphList() {
+        //    if (current != null) return current.graphs;
+        //    else return null;
+        //}
         public static void FocusData(Vector2 point) {
             if (current != null) {
                 if (current.settings.autoAdjustX) {

@@ -34,7 +34,17 @@ namespace AdVd.Graphs
             Graph graph = target as Graph;
             bool multiple = serializedObject.isEditingMultipleObjects;
 
-            drawMode.intValue = (int)(Graph.DrawMode)EditorGUILayout.EnumFlagsField(new GUIContent("Draw Mode"), (Graph.DrawMode)drawMode.intValue);
+            if (!multiple || !drawMode.hasMultipleDifferentValues)
+            {
+                drawMode.intValue = (int)(Graph.DrawMode)EditorGUILayout.EnumFlagsField(new GUIContent("Draw Mode"), (Graph.DrawMode)drawMode.intValue);
+            }
+            else
+            {
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Label(new GUIContent("Draw Mode"), GUILayout.Width(EditorGUIUtility.labelWidth - 4f));
+                if (GUILayout.Button(new GUIContent("Multi Edit"), EditorStyles.miniButton, GUILayout.MinWidth(EditorGUIUtility.fieldWidth))) drawMode.intValue = 0;
+                EditorGUILayout.EndHorizontal();
+            }
             EditorGUILayout.PropertyField(color);
             EditorGUILayout.PropertyField(clearOnPlay);
 
