@@ -15,6 +15,7 @@
 		Cull Off
 		LOD 100
 
+		// Lines
 		Pass
 		{
 			CGPROGRAM
@@ -40,19 +41,19 @@
 					_Transform.x + _Transform.z * buffer[id].x,
 					_Transform.y + _Transform.w * buffer[id].y, 1);
 				o.vertex = UnityObjectToClipPos(vertex);
-				o.uv = float2(0, 0);//o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+				o.uv = float2(0, 0);
 				return o;
 			}
 			
 			fixed4 frag (v2f i) : SV_Target
 			{
-				// sample the texture
-				fixed4 col = _Color;// tex2D(_MainTex, i.uv);
+				fixed4 col = _Color;
 				return col;
 			}
 			ENDCG
 		}
 
+		// Bars
 		Pass
 		{
 			CGPROGRAM
@@ -79,19 +80,19 @@
 					_Transform.x + _Transform.z * buffer[i].x,
 					(_Transform.y + _Transform.w * buffer[i].y) * ((id % 2) == 0), 1);
 				o.vertex = UnityObjectToClipPos(vertex);
-				o.uv = float2(0, 0);//o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+				o.uv = float2(0, 0);
 				return o;
 			}
 			
 			fixed4 frag (v2f i) : SV_Target
 			{
-				// sample the texture
-				fixed4 col = _Color;// tex2D(_MainTex, i.uv);
+				fixed4 col = _Color;
 				return col;
 			}
 			ENDCG
 		}
 
+		// Area
 		Pass
 		{
 			CGPROGRAM
@@ -124,20 +125,20 @@
 					_Transform.x + _Transform.z * buffer[i].x,
 					(_Transform.y + _Transform.w * buffer[i].y) * (1 - zero), 1);
 				o.vertex = UnityObjectToClipPos(vertex);
-				o.uv = float2(next, 1 - zero);//o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+				o.uv = float2(next, 1 - zero);
 				return o;
 			}
 			
 			fixed4 frag (v2f i) : SV_Target
 			{
-				// sample the texture
-				fixed4 col = _Color;// * tex2D(_MainTex, i.uv);
+				fixed4 col = _Color;
 				col.a *= 0.25;
 				return col;
 			}
 			ENDCG
 		}
 
+		// Markers
 		Pass
 		{
 			CGPROGRAM
@@ -175,13 +176,12 @@
 				o.vertex = UnityObjectToClipPos(vertex);
 				o.vertex.x += offset.x * _MarkerSize.x;
 				o.vertex.y += offset.y * _MarkerSize.y;
-				o.uv = float2(next, 1 - zero);//o.uv = TRANSFORM_TEX(v.uv, _MainTex);
+				o.uv = float2(next, 1 - zero);
 				return o;
 			}
 			
 			fixed4 frag (v2f i) : SV_Target
 			{
-				// sample the texture
 				fixed4 col = _Color * tex2D(_MainTex, i.uv);
 				return col;
 			}

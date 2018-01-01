@@ -62,6 +62,25 @@ namespace AdVd.Graphs
                 EditorGUILayout.PropertyField(markerSize);
             }
 
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button(new GUIContent("Import")))
+            {
+                string path = EditorUtility.OpenFilePanelWithFilters("Export as CSV", "", new string[] { "CSV", "csv" });
+                if (!string.IsNullOrEmpty(path))
+                {
+                    graph.LoadCSV(path);
+                }
+            }
+            if (GUILayout.Button(new GUIContent("Export")))
+            {
+                string path = EditorUtility.SaveFilePanelInProject("Export as CSV", graph.name, "csv", "Export as CSV");
+                if (!string.IsNullOrEmpty(path))
+                {
+                    graph.SaveCSV(path);
+                }
+            }
+            GUILayout.EndHorizontal();
+
             serializedObject.ApplyModifiedProperties();
         }
 
@@ -89,7 +108,7 @@ namespace AdVd.Graphs
 
         //        if (g.DrawArea)
         //        {
-                    
+
         //        }
 
         //        if (g.DrawPoints)

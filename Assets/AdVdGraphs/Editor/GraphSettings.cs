@@ -4,7 +4,6 @@ using UnityEditor;
 
 namespace AdVd.Graphs
 {
-    //[CreateAssetMenu(fileName = "GraphSettings", menuName = "AdVdGraphs Settings")]
     public class GraphSettings : ScriptableObject
     {
         public const string settingsPath = "Assets/AdVdGraphs/Editor/GraphSettings.asset";

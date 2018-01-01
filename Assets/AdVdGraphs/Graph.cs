@@ -6,11 +6,8 @@ using UnityEngine;
 
 namespace AdVd.Graphs
 {
-    //[CreateAssetMenu(fileName = "New Graph", menuName = "Graph")]
     public class Graph : ScriptableObject, IEnumerable<Vector2>
     {
-        //internal int hash;
-
         public DrawMode drawMode = DrawMode.Lines;
         public Color color = Color.white;
 
@@ -58,9 +55,7 @@ namespace AdVd.Graphs
         {
             return GetEnumerator();
         }
-
-        //TODO scale & offset?
-
+        
         [NonSerialized]
         public ComputeBuffer buffer;
 
@@ -71,7 +66,6 @@ namespace AdVd.Graphs
 
         private void OnEnable()
         {
-            //Debug.Log("Enabled " + name);
             if (buffer == null) buffer = new ComputeBuffer(Mathf.Max(1, data.Length), Marshal.SizeOf(typeof(Vector2)), ComputeBufferType.Default);
             OnValidate();
             AddToDictionary();
@@ -79,14 +73,11 @@ namespace AdVd.Graphs
 
         void OnValidate()
         {
-            //hash = name.GetHashCode();
-            //Debug.Log("Validated " + name);
             DumpToBuffer();
         }
 
         private void OnDisable()
         {
-            //Debug.Log("Disabled " + name);
             if (buffer != null)
             {
                 buffer.Release();
@@ -94,9 +85,8 @@ namespace AdVd.Graphs
             }
         }
 
-        private void OnDestroy()//This may not be called on delete, GarbageCollector releases the buffer
+        private void OnDestroy()//This may not be called on delete, GarbageCollector releases the buffer later
         {
-            //Debug.Log("Destroyed " + name);
             if (buffer != null)
             {
                 buffer.Release();
@@ -129,24 +119,18 @@ namespace AdVd.Graphs
 
         void AddToDictionary()
         {
-            //if (!loadedGraphs.ContainsKey(name) || loadedGraphs[name] == null)
-            //{
-            //    loadedGraphs.Add(name, this);
-            //}
             loadedGraphs[name] = this;
         }
 
 #if UNITY_EDITOR
         static System.Reflection.MethodInfo focusDataMethod;
-        //static System.Reflection.MethodInfo getGraphListMethod;//TODO replace with editor independent list?
-        
+
+        [UnityEditor.InitializeOnLoadMethod]
         [RuntimeInitializeOnLoadMethod]
         static void Init() {
             System.Reflection.Assembly editorAssembly = Array.Find(AppDomain.CurrentDomain.GetAssemblies(), a => a.FullName.StartsWith("Assembly-CSharp-Editor,")); // ',' included to ignore  Assembly-CSharp-Editor-FirstPass
             Type utilityType = Array.Find(editorAssembly.GetTypes(), t => t.FullName.Contains("GraphViewer"));
             focusDataMethod = utilityType.GetMethod("FocusData", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-            //getGraphListMethod = utilityType.GetMethod("GetGraphList", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static);
-            //.Invoke(obj: null, parameters: null);
         }
 
         [UnityEditor.MenuItem("Assets/Create/Graph", priority = 0)]
@@ -155,65 +139,36 @@ namespace AdVd.Graphs
             Graph g = CreateInstance<Graph>();
             UnityEditor.ProjectWindowUtil.CreateAsset(g, "New Graph.asset");
             return g;
-            //PolygonSet ps = PolygonSet.CreatePolygonSet();
-            //UnityEditor.ProjectWindowUtil.CreateAsset(ps, "New PolygonSet.asset");
-        }
-        
-        public static Graph CreateGraphWithName(string name) {
-            //TODO use in GraphViewer
-            Graph g = CreateInstance<Graph>();
-            g.name = name;
-            g.AddToDictionary();
-            UnityEditor.AssetDatabase.CreateAsset(g, "Assets/AdVdGraphs/Graphs/" + name + ".asset");
-            
-            return g;
         }
 #endif
 
-        public static Graph FindGraph(string name) {
-            //#if UNITY_EDITOR
-            //int hash = name.GetHashCode();
-            //List<Graph> list = (List<Graph>)getGraphListMethod.Invoke(obj: null, parameters: null);
-            //return list != null ? list.Find(g => g.hash == hash && g.name == name) : null;
-
+        public static Graph FindGraph(string name)
+        {
             if (loadedGraphs.ContainsKey(name))
             {
                 return loadedGraphs[name];
             }
             else
             {
-                Debug.LogWarningFormat("Graph {0} not found.", name);
-                //loadedGraphs.Add(name, null);
+                Debug.LogWarningFormat("Graph '{0}' not found. If the asset exists Unity will load it when you select it.", name);
                 loadedGraphs[name] = null;
-                //                Graph g = null;
-                //#if UNITY_EDITOR
-                //                bool result = UnityEditor.EditorUtility.DisplayDialog("Create Graph", "Create Graph '" + name + "'?", "Ok", "Cancel");
-                //                if (result) g = CreateGraphWithName(name);
-                //                //loadedGraphs.Add(name, g);
-                //#endif
-                //                return g;
                 return null;
             }
-//#else
-//            return null;//TODO viewer independent search
-//#endif
         }
         
         public static void AddData(string name, float value) {
             AddData(name, Time.time, value);
         }
         public static void AddData(string name, float time, float value) {
-#if UNITY_EDITOR
             Graph g = FindGraph(name);
             if (g != null) g.AddData(time, value);
-#endif
         }
 
         public void AddData(float value)
         {
             AddData(Time.time, value);
         }
-        private object[] parameters = new object[1];
+        private object[] parameters = new object[2];
         public void AddData(float time, float value)
         {
             Vector2 dataPoint = new Vector2(time, value);
@@ -224,9 +179,34 @@ namespace AdVd.Graphs
 
 #if UNITY_EDITOR
             DumpToBuffer();
-            parameters[0] = offset + Vector2.Scale(dataPoint, scale);
+            parameters[0] = this;
+            parameters[1] = offset + Vector2.Scale(dataPoint, scale);
             focusDataMethod.Invoke(obj: null, parameters: parameters);
 #endif
+        }
+
+        public void LoadCSV(string path)
+        {
+            string[] lines = System.IO.File.ReadAllLines(path);
+            Clear();
+            if (data.Length < lines.Length) data = new Vector2[lines.Length];
+            foreach (string line in lines) data[index++] = ParseVector2(line);
+            count = index;
+        }
+        public void SaveCSV(string path)
+        {
+            System.Text.StringBuilder sb = new System.Text.StringBuilder(data.Length * 15);
+            foreach (Vector2 dataPoint in this) sb.AppendFormat("{0:0.#####};{1:0.#####}\n", dataPoint.x, dataPoint.y);
+            System.IO.File.WriteAllText(path, sb.ToString());
+        }
+        static Vector2 ParseVector2(string value)
+        {
+            Vector2 v = default(Vector2);
+            string[] splitted = value.Split(';');
+            if (splitted.Length != 2) return v;
+            if (!float.TryParse(splitted[0], out v.x)) return v;
+            if (!float.TryParse(splitted[1], out v.y)) return v;
+            return v;
         }
     }
 }
