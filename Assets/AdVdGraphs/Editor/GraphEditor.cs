@@ -10,6 +10,8 @@ namespace AdVd.Graphs
         SerializedProperty drawMode;
         SerializedProperty clearOnPlay;
         SerializedProperty color;
+        SerializedProperty offset;
+        SerializedProperty scale;
         SerializedProperty markerTex;
         SerializedProperty markerSize;
 
@@ -20,6 +22,8 @@ namespace AdVd.Graphs
             drawMode = serializedObject.FindProperty("drawMode");
             clearOnPlay = serializedObject.FindProperty("clearOnPlay");
             color = serializedObject.FindProperty("color");
+            offset = serializedObject.FindProperty("offset");
+            scale = serializedObject.FindProperty("scale");
             markerTex = serializedObject.FindProperty("markerTex");
             markerSize = serializedObject.FindProperty("markerSize");
 
@@ -46,6 +50,8 @@ namespace AdVd.Graphs
                 EditorGUILayout.EndHorizontal();
             }
             EditorGUILayout.PropertyField(color);
+            EditorGUILayout.PropertyField(offset);
+            EditorGUILayout.PropertyField(scale);
             EditorGUILayout.PropertyField(clearOnPlay);
 
             data.arraySize = EditorGUILayout.IntField(new GUIContent("Data Size"), data.arraySize);

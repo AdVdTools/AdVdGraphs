@@ -345,6 +345,7 @@ namespace AdVd.Graphs
                     //buffer.SetData(g.data);//TODO use partial copy version
                     graphMaterial.SetBuffer("buffer", g.buffer);
                     graphMaterial.SetColor("_Color", g.color);
+                    graphMaterial.SetVector("_Transform", new Vector4(g.offset.x, g.offset.y, g.scale.x, g.scale.y));
                     if (g.DrawLines)
                     {
                         graphMaterial.SetPass(0);
@@ -371,7 +372,7 @@ namespace AdVd.Graphs
                     Vector2 mousePosition = Event.current.mousePosition;
                     foreach (Vector2 dataPoint in g)
                     {
-                        Vector2 point = HandleUtility.WorldToGUIPoint(dataPoint);
+                        Vector2 point = HandleUtility.WorldToGUIPoint(g.offset + Vector2.Scale(dataPoint, g.scale));
                         Vector2 diff = point - mousePosition;
                         float size = 5f * g.markerSize;
                         bool hover = diff.x > -size && diff.x < size && diff.y > -size && diff.y < size;

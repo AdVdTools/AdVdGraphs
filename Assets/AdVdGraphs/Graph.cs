@@ -32,6 +32,10 @@ namespace AdVd.Graphs
         public bool DrawArea { get { return (drawMode & DrawMode.Area) != 0; } }
 
         public bool clearOnPlay = true;
+
+        public Vector2 offset = Vector2.zero;
+        public Vector2 scale = Vector2.one;
+
         public Vector2[] data = new Vector2[500];
 
         private int index;
@@ -220,7 +224,7 @@ namespace AdVd.Graphs
 
 #if UNITY_EDITOR
             DumpToBuffer();
-            parameters[0] = dataPoint;
+            parameters[0] = offset + Vector2.Scale(dataPoint, scale);
             focusDataMethod.Invoke(obj: null, parameters: parameters);
 #endif
         }
