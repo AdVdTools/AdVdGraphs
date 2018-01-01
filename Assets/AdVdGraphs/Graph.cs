@@ -168,7 +168,9 @@ namespace AdVd.Graphs
         {
             AddData(Time.time, value);
         }
+#pragma warning disable 0414
         private object[] parameters = new object[2];
+#pragma warning restore 0414
         public void AddData(float time, float value)
         {
             Vector2 dataPoint = new Vector2(time, value);

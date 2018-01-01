@@ -81,3 +81,4 @@ $RECYCLE.BIN/
 *.lnk
 
 .vs
+build*
