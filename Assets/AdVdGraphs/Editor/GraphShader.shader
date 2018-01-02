@@ -125,7 +125,7 @@
 					_Transform.x + _Transform.z * buffer[i].x,
 					(_Transform.y + _Transform.w * buffer[i].y) * (1 - zero), 1);
 				o.vertex = UnityObjectToClipPos(vertex);
-				o.uv = float2(next, 1 - zero);
+				o.uv = float2(next, zero);
 				return o;
 			}
 			
@@ -168,7 +168,7 @@
 				uint zero = (id % 2);
 				uint i = id / 6;
 
-				float3 offset = float3(-0.5 + next, -0.5 + (id % 2), 0) * 0.2;
+				float3 offset = float3(-0.5 + next, -0.5 + zero, 0) * 0.2;
 				
 				float3 vertex = float3(
 					_Transform.x + _Transform.z * buffer[i].x,
@@ -176,7 +176,7 @@
 				o.vertex = UnityObjectToClipPos(vertex);
 				o.vertex.x += offset.x * _MarkerSize.x;
 				o.vertex.y += offset.y * _MarkerSize.y;
-				o.uv = float2(next, 1 - zero);
+				o.uv = float2(next, zero);
 				return o;
 			}
 			

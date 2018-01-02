@@ -480,8 +480,8 @@ namespace AdVd.Graphs
             GenericMenu gm = new GenericMenu();
             gm.AddItem(new GUIContent("Settings Inspector"), false, () => Selection.activeObject = settings);
             gm.AddItem(new GUIContent("Reset View"), false, () => graphRect = new Rect(-0.5f, -0.5f, 1f, 1f));
-            gm.AddItem(new GUIContent("TEST"), false, () => Selection.activeObject = this);
-            gm.AddItem(new GUIContent("TEST2"), false, () => Selection.activeObject = graphCamera.gameObject);
+            //gm.AddItem(new GUIContent("TEST"), false, () => Selection.activeObject = this);
+            //gm.AddItem(new GUIContent("TEST2"), false, () => Selection.activeObject = graphCamera.gameObject);
             return gm;
         }
 
