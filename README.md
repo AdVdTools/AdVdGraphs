@@ -1,7 +1,7 @@
 # AdVdGraphs
 Tool to draw graphs in Unity. This has not been fully tested and crashes/memory leaks may occur, use at your own risk.
 
-![Alt Text](https://raw.githubusercontent.com/AdVdTools/AdVdGraphs/master/Demo.gif)
+![Demo](https://raw.githubusercontent.com/AdVdTools/AdVdGraphs/master/Demo.gif)
 
 ## Setup
 - Create a Graph asset on the create asset menu.
@@ -9,10 +9,10 @@ Tool to draw graphs in Unity. This has not been fully tested and crashes/memory 
 - Call Graph.AddData("graph name", value) from your scripts to log a value over time.
 - It is also possible to find a graph using Graph.FindGraph("graph name") or any other means and then call AddData(value) on the instance.
 
-![Alt Text](https://raw.githubusercontent.com/AdVdTools/AdVdGraphs/master/setup.gif)
+![Setup](https://raw.githubusercontent.com/AdVdTools/AdVdGraphs/master/setup.gif)
 
-## Configuration
-![Alt Text](https://raw.githubusercontent.com/AdVdTools/AdVdGraphs/master/graph_configuration.gif)
+## Graph Configuration
+![GraphConfiguration](https://raw.githubusercontent.com/AdVdTools/AdVdGraphs/master/graph_configuration.gif)
 
 - Set the color and draw mode.
 - Adjust the offset and scale to draw the graph.
@@ -22,7 +22,7 @@ Tool to draw graphs in Unity. This has not been fully tested and crashes/memory 
 - Export and import graph data as csv files.
 
 ## GraphViewer
-![Alt Text](https://raw.githubusercontent.com/AdVdTools/AdVdGraphs/master/graph_viewer_controls.gif)
+![Graph Viewer](https://raw.githubusercontent.com/AdVdTools/AdVdGraphs/master/graph_viewer_controls.gif)
 
 - Set the order in which the graphs are drawn in the viewer.
 - Add graphs to the viewer by dragging the asset to the list or through the add (+) options: create a new graph asset or choose existing graphs with the object picker.
