@@ -46,9 +46,9 @@ namespace AdVd.Graphs
 
         void OnPlayModeChange(PlayModeStateChange mode)
         {
-            if (mode == PlayModeStateChange.EnteredPlayMode)
+            if (mode == PlayModeStateChange.ExitingEditMode)
             {
-                foreach (Graph g in graphs) if (g.clearOnPlay) g.Clear();
+                foreach (Graph g in graphs) if (g != null && g.clearOnPlay) g.Clear();
             }
         }
 
@@ -182,12 +182,12 @@ namespace AdVd.Graphs
             
             if (GUILayout.Button(new GUIContent("Clear All"), EditorStyles.toolbarButton))
             {
-                foreach (Graph g in graphs) g.Clear();
+                foreach (Graph g in graphs) if (g != null) g.Clear();
             }
             GUI.enabled = (graphsRList.index < graphs.Count && graphsRList.index >= 0);
             if (GUILayout.Button(new GUIContent("Clear Selected"), EditorStyles.toolbarButton))
             {
-                graphs[graphsRList.index].Clear();
+                if (graphs[graphsRList.index] != null) graphs[graphsRList.index].Clear();
             }
             GUI.enabled = true;
 
@@ -217,11 +217,6 @@ namespace AdVd.Graphs
 
             GraphListGUI(divisions.GetHorizontalLayoutRect(0, areaRect));
             GraphDisplayGUI(divisions.GetHorizontalLayoutRect(1, areaRect));
-
-            //TODO check sometimes wrong on recompile
-            //Debug.Log(divisions.GetHorizontalLayoutRect(1, areaRect));
-
-
         }
 
         SerializedObject serializedWindow;
@@ -354,12 +349,14 @@ namespace AdVd.Graphs
 
                     settings.autoAdjustX = false;
                     settings.autoAdjustY = false;
+
+                    Repaint();
                 }
                 else if (Event.current.type == EventType.ScrollWheel && rect.Contains(Event.current.mousePosition))
                 {
                     float wheelMultiplier = Mathf.Exp(HandleUtility.niceMouseDeltaZoom * 0.03f);
                     Vector2 mousePosition = Event.current.mousePosition;
-                        
+
                     if (!Event.current.shift)
                     {
                         float x = Mathf.InverseLerp(rect.xMin, rect.xMax, mousePosition.x);
@@ -380,6 +377,7 @@ namespace AdVd.Graphs
                         if (graphRect.height < 1e-5f) graphRect.height = 1e-5f;
                         settings.autoAdjustY = false;
                     }
+                    Repaint();
                 }
             }
         }
@@ -416,7 +414,11 @@ namespace AdVd.Graphs
             int gridXEnd = Mathf.FloorToInt(xMax / stepX);
             int gridYStart = Mathf.CeilToInt(yMin / stepY);
             int gridYEnd = Mathf.FloorToInt(yMax / stepY);
-            
+
+            // This is stupid, but prevents lines to be wrongly
+            // drawn the first time after scripts reload.
+            Handles.Label(Vector3.zero, new GUIContent(""));
+
             Handles.color = gray;
             float depth = 1f;
             for (int x = gridXStart; x <= gridXEnd; ++x)

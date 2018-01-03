@@ -48,7 +48,7 @@ namespace AdVd.Graphs
                 for (int i = startIndex + data.Length; i < data.Length; ++i) yield return data[i];
                 startIndex = 0;
             }
-            for (int i = startIndex; i < index; ++i) yield return data[i];//TODO don't do all!!
+            for (int i = startIndex; i < index; ++i) yield return data[i];
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -73,7 +73,7 @@ namespace AdVd.Graphs
 
         void OnValidate()
         {
-            DumpToBuffer();
+            FillBuffer();
         }
 
         private void OnDisable()
@@ -94,7 +94,7 @@ namespace AdVd.Graphs
             }
         }
 
-        void DumpToBuffer()
+        void FillBuffer()
         {
             if (buffer != null)
             {
@@ -180,7 +180,7 @@ namespace AdVd.Graphs
             if (count < data.Length) count++;
 
 #if UNITY_EDITOR
-            DumpToBuffer();
+            FillBuffer();
             parameters[0] = this;
             parameters[1] = offset + Vector2.Scale(dataPoint, scale);
             focusDataMethod.Invoke(obj: null, parameters: parameters);
