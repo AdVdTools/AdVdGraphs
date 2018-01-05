@@ -54,7 +54,7 @@ namespace AdVd.Graphs
             EditorGUILayout.PropertyField(scale);
             EditorGUILayout.PropertyField(clearOnPlay);
 
-            data.arraySize = EditorGUILayout.IntField(new GUIContent("Data Size"), data.arraySize);
+            data.arraySize = Mathf.Max(1, EditorGUILayout.IntField(new GUIContent("Data Size"), data.arraySize));
 
             if (graph.DrawPoints || multiple)
             {

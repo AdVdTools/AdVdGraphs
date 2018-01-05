@@ -33,12 +33,14 @@ namespace AdVd.Graphs
         public Vector2 offset = Vector2.zero;
         public Vector2 scale = Vector2.one;
 
-        public Vector2[] data = new Vector2[500];
+        [SerializeField] Vector2[] data = new Vector2[500];
 
         private int index;
         private int count;
 
         public int Count { get { return count; } }
+
+        public bool IsFull() { return count >= data.Length; }
 
         public IEnumerator<Vector2> GetEnumerator()
         {
@@ -55,9 +57,6 @@ namespace AdVd.Graphs
         {
             return GetEnumerator();
         }
-        
-        [NonSerialized]
-        public ComputeBuffer buffer;
 
         public void Clear()
         {
@@ -66,54 +65,49 @@ namespace AdVd.Graphs
 
         private void OnEnable()
         {
-            if (buffer == null) buffer = new ComputeBuffer(Mathf.Max(1, data.Length), Marshal.SizeOf(typeof(Vector2)), ComputeBufferType.Default);
-            OnValidate();
             AddToDictionary();
+        }
+
+#if UNITY_EDITOR
+        private bool dirty;
+        public bool IsDirty()
+        {
+            return dirty;
         }
 
         void OnValidate()
         {
-            FillBuffer();
+            dirty = true;
+
+            if (index < 0 || index >= data.Length) index = 0;
+            if (count < 0) count = 0;//Empty
+            else if (count > data.Length) count = data.Length;//Full
         }
 
-        private void OnDisable()
+        public void FillBuffer(ref ComputeBuffer buffer)
         {
-            if (buffer != null)
+            if (buffer != null && buffer.count != data.Length && data.Length > 0)
             {
                 buffer.Release();
                 buffer = null;
             }
-        }
-
-        private void OnDestroy()//This may not be called on delete, GarbageCollector releases the buffer later
-        {
-            if (buffer != null)
-            {
-                buffer.Release();
-                buffer = null;
+            if (buffer == null) { 
+                buffer = new ComputeBuffer(Mathf.Max(1, data.Length), Marshal.SizeOf(typeof(Vector2)), ComputeBufferType.Default);
             }
-        }
 
-        void FillBuffer()
-        {
-            if (buffer != null)
+            int startIndex = index - count;
+            int bufferIndex = 0;
+            if (startIndex < 0)
             {
-                if (buffer.count != data.Length && data.Length > 0) {
-                    buffer.Release();
-                    buffer = new ComputeBuffer(data.Length, Marshal.SizeOf(typeof(Vector2)), ComputeBufferType.Default);
-                    Clear();
-                }
-                int startIndex = index - count;
-                int bufferIndex = 0;
-                if (startIndex < 0)
-                {
-                    buffer.SetData(data, startIndex + data.Length, bufferIndex, -startIndex);
-                    bufferIndex = -startIndex;
-                    startIndex = 0;
-                }
-                buffer.SetData(data, startIndex, bufferIndex, index - startIndex);
+                buffer.SetData(data, startIndex + data.Length, bufferIndex, -startIndex);
+                bufferIndex = -startIndex;
+                startIndex = 0;
             }
+            buffer.SetData(data, startIndex, bufferIndex, index - startIndex);
+            
+            dirty = false;
         }
+#endif
 
         private static Dictionary<string, Graph> loadedGraphs = new Dictionary<string, Graph>();
 
@@ -180,7 +174,7 @@ namespace AdVd.Graphs
             if (count < data.Length) count++;
 
 #if UNITY_EDITOR
-            FillBuffer();
+            dirty = true;
             parameters[0] = this;
             parameters[1] = offset + Vector2.Scale(dataPoint, scale);
             focusDataMethod.Invoke(obj: null, parameters: parameters);

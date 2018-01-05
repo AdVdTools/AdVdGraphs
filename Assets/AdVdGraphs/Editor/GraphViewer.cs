@@ -42,13 +42,22 @@ namespace AdVd.Graphs
             if (graphMaterial != null) DestroyImmediate(graphMaterial, false);
 
             EditorApplication.playModeStateChanged -= OnPlayModeChange;
+
+            for (int i = 0; i < buffers.Length; ++i)
+            {
+                if (buffers[i] != null)
+                {
+                    buffers[i].Release();
+                    buffers[i] = null;
+                }
+            }
         }
 
         void OnPlayModeChange(PlayModeStateChange mode)
         {
             if (mode == PlayModeStateChange.ExitingEditMode)
             {
-                foreach (Graph g in graphs) if (g != null && g.clearOnPlay) g.Clear();
+                foreach (Graph g in displayedGraphs) if (g != null && g.clearOnPlay) g.Clear();
             }
         }
 
@@ -57,7 +66,7 @@ namespace AdVd.Graphs
             Graph graph = Selection.activeObject as Graph;
             if (graph)
             {
-                int index = graphs.FindIndex((g) => g == graph);
+                int index = displayedGraphs.FindIndex((g) => g == graph);
                 graphsRList.index = index;
             }
             Repaint();
@@ -72,6 +81,23 @@ namespace AdVd.Graphs
 
         void OnHierachyChange() { Repaint(); }
         void OnInspectorUpdate() { Repaint(); }
+
+        void OnValidate()
+        {
+            if (buffers.Length < displayedGraphs.Count) Array.Resize(ref buffers, displayedGraphs.Count);
+            for (int i = 0; i < displayedGraphs.Count; ++i)
+            {
+                Graph g = displayedGraphs[i];
+                if (g == null || g.Count == 0) continue;
+                g.FillBuffer(ref buffers[i]);
+            }
+            for (int i = displayedGraphs.Count; i < buffers.Length; ++i)
+            {
+                if (buffers[i] == null) continue;
+                buffers[i].Release();
+                buffers[i] = null;
+            }
+        }
 
         void OnUndoRedo() { Repaint(); }
 
@@ -91,7 +117,7 @@ namespace AdVd.Graphs
         // Graph List Setup
         void GraphListSetup () {
             serializedWindow = new SerializedObject(this);
-            graphsRList = new ReorderableList(serializedWindow, serializedWindow.FindProperty("graphs"), true, true, true, true);
+            graphsRList = new ReorderableList(serializedWindow, serializedWindow.FindProperty("displayedGraphs"), true, true, true, true);
             graphsRList.headerHeight = 0f;
             graphsRList.drawElementCallback = DrawGraphElement;
             graphsRList.onAddDropdownCallback = OnAddGraphDropDown;
@@ -101,8 +127,8 @@ namespace AdVd.Graphs
 
         void DrawGraphElement(Rect rect, int index, bool active, bool focused)
         {
-            if (index < 0 || index >= graphs.Count || graphs[index] == null) return;
-            GUI.Label(rect, graphs[index].name);
+            if (index < 0 || index >= displayedGraphs.Count || displayedGraphs[index] == null) return;
+            GUI.Label(rect, displayedGraphs[index].name);
         }
 
         void OnAddGraphDropDown(Rect rect, ReorderableList list)
@@ -137,7 +163,7 @@ namespace AdVd.Graphs
         {
             if (graphsRList.index >= 0 && graphsRList.index < graphsRList.count)
             {
-                Selection.activeObject = graphs[graphsRList.index] as Graph;
+                Selection.activeObject = displayedGraphs[graphsRList.index];
             }
         }
 
@@ -174,7 +200,8 @@ namespace AdVd.Graphs
         }
 
         [SerializeField] DivisionSlider divisions;
-        [SerializeField] List<Graph> graphs = new List<Graph>();
+        [SerializeField] List<Graph> displayedGraphs = new List<Graph>();
+        ComputeBuffer[] buffers = new ComputeBuffer[1];
 
         void OnGUI()
         {
@@ -182,12 +209,12 @@ namespace AdVd.Graphs
             
             if (GUILayout.Button(new GUIContent("Clear All"), EditorStyles.toolbarButton))
             {
-                foreach (Graph g in graphs) if (g != null) g.Clear();
+                foreach (Graph g in displayedGraphs) if (g != null) g.Clear();
             }
-            GUI.enabled = (graphsRList.index < graphs.Count && graphsRList.index >= 0);
+            GUI.enabled = (graphsRList.index < displayedGraphs.Count && graphsRList.index >= 0);
             if (GUILayout.Button(new GUIContent("Clear Selected"), EditorStyles.toolbarButton))
             {
-                if (graphs[graphsRList.index] != null) graphs[graphsRList.index].Clear();
+                if (displayedGraphs[graphsRList.index] != null) displayedGraphs[graphsRList.index].Clear();
             }
             GUI.enabled = true;
 
@@ -290,11 +317,16 @@ namespace AdVd.Graphs
                 DrawGrid(graphRect);
                 
                 Vector2 rectRatio = new Vector2(100f / rect.width, 100f / rect.height);
-                
-                foreach (Graph g in graphs)
+
+                if (buffers.Length < displayedGraphs.Count) Array.Resize(ref buffers, displayedGraphs.Count);
+                for (int i = 0; i < displayedGraphs.Count; ++i)
                 {
+                    Graph g = displayedGraphs[i];
                     if (g == null || g.Count == 0) continue;
-                    graphMaterial.SetBuffer("buffer", g.buffer);
+                    if (g.IsDirty() || buffers[i] == null) g.FillBuffer(ref buffers[i]);
+                    if (buffers[i] == null) return;
+
+                    graphMaterial.SetBuffer("buffer", buffers[i]);
                     graphMaterial.SetColor("_Color", g.color);
                     graphMaterial.SetVector("_Transform", new Vector4(g.offset.x, g.offset.y, g.scale.x, g.scale.y));
                     if (g.DrawLines)
@@ -488,7 +520,7 @@ namespace AdVd.Graphs
         }
 
         public static void FocusData(Graph graph, Vector2 point) {
-            if (current != null && current.graphs.Contains(graph) && graph.drawMode != Graph.DrawMode.Nothing) {
+            if (current != null && current.displayedGraphs.Contains(graph) && graph.drawMode != Graph.DrawMode.Nothing) {
                 if (current.settings.autoAdjustX) {
                     if (point.x < current.graphRect.xMin) {
                         current.graphRect.xMin = point.x;
