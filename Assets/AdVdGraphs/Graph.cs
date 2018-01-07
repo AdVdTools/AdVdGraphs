@@ -84,27 +84,31 @@ namespace AdVd.Graphs
             else if (count > data.Length) count = data.Length;//Full
         }
 
-        public void FillBuffer(ref ComputeBuffer buffer)
+        public void FillMeshData(ref MeshSet meshSet)
         {
-            if (buffer != null && buffer.count != data.Length && data.Length > 0)
+            if (meshSet != null && meshSet.Count != data.Length && data.Length > 0)
             {
-                buffer.Release();
-                buffer = null;
+                meshSet.Release();
+                meshSet = null;
             }
-            if (buffer == null) { 
-                buffer = new ComputeBuffer(Mathf.Max(1, data.Length), Marshal.SizeOf(typeof(Vector2)), ComputeBufferType.Default);
+            if (meshSet == null) {
+                meshSet = new MeshSet(data.Length);
             }
 
             int startIndex = index - count;
             int bufferIndex = 0;
             if (startIndex < 0)
             {
-                buffer.SetData(data, startIndex + data.Length, bufferIndex, -startIndex);
+                meshSet.SetData(data, startIndex + data.Length, bufferIndex, -startIndex);
                 bufferIndex = -startIndex;
                 startIndex = 0;
             }
-            buffer.SetData(data, startIndex, bufferIndex, index - startIndex);
-            
+            meshSet.SetData(data, startIndex, bufferIndex, index - startIndex);
+
+            bufferIndex += index - startIndex;
+            meshSet.SetData(meshSet[bufferIndex - 1], bufferIndex, meshSet.Count - bufferIndex);
+            meshSet.Rebuild();
+
             dirty = false;
         }
 #endif
@@ -203,6 +207,122 @@ namespace AdVd.Graphs
             if (!float.TryParse(splitted[0], out v.x)) return v;
             if (!float.TryParse(splitted[1], out v.y)) return v;
             return v;
+        }
+
+
+
+        public class MeshSet
+        {
+            private Vector3[] data;
+            private int[] indices0;
+            private int[] indices1;
+            private int[] indices2;
+            private int[] indices3;
+
+            private Vector3[] verticesX2;
+            private Vector3[] verticesX4;
+
+            private Vector2[] uvs3;
+
+            public Mesh mesh0;
+            public Mesh mesh1;
+            public Mesh mesh2;
+            public Mesh mesh3;
+
+            public MeshSet(int size)
+            {
+                data = new Vector3[size];
+
+                verticesX2 = new Vector3[size * 2];
+                verticesX4 = new Vector3[size * 4];
+
+                indices0 = new int[size];
+                indices1 = new int[size * 2];
+                indices2 = new int[size * 4 - 4];
+                indices3 = new int[size * 4];
+
+                uvs3 = new Vector2[size * 4];
+
+                BuildIndices();
+
+                mesh0 = new Mesh();
+                mesh0.MarkDynamic();
+                mesh0.vertices = data;
+                mesh0.SetIndices(indices0, MeshTopology.LineStrip, 0, false, 0);
+                mesh0.hideFlags = HideFlags.HideAndDontSave;
+                mesh1 = new Mesh();
+                mesh1.MarkDynamic();
+                mesh1.vertices = verticesX2;
+                mesh1.SetIndices(indices1, MeshTopology.Lines, 0, false, 0);
+                mesh1.hideFlags = HideFlags.HideAndDontSave;
+                mesh2 = new Mesh();
+                mesh2.MarkDynamic();
+                mesh2.vertices = verticesX2;
+                mesh2.SetIndices(indices2, MeshTopology.Quads, 0, false, 0);
+                mesh2.hideFlags = HideFlags.HideAndDontSave;
+                mesh3 = new Mesh();
+                mesh3.MarkDynamic();
+                mesh3.vertices = verticesX4;
+                mesh3.uv = uvs3;
+                mesh3.SetIndices(indices3, MeshTopology.Quads, 0, false, 0);
+                mesh3.hideFlags = HideFlags.HideAndDontSave;
+            }
+
+            public int Count { get { return indices0.Length; } }
+
+            public Vector3 this[int index] { get { return data[index]; } }
+
+            private void BuildIndices()
+            {
+                for (int i = 0; i < indices0.Length; ++i) indices0[i] = i;
+                for (int i = 0; i < indices1.Length; ++i) indices1[i] = i;
+                for (int i = 0; i < indices2.Length; ++i) indices2[i] = ((i + 2) / 4) * 2 + (((i + 1) / 2) & 1);
+                for (int i = 0; i < indices3.Length; ++i) indices3[i] = i;
+
+                for (int i = 0; i < uvs3.Length; ++i) uvs3[i] = new Vector2(((i + 0) % 4) / 2, ((i + 1) % 4) / 2);
+            }
+
+            public void SetData(Vector2[] array, int startIndex, int verticesStartIndex, int count)
+            {
+                for (int i = 0; i < count; ++i)
+                {
+                    data[verticesStartIndex + i] = array[startIndex + i];// z = 0, overriden in shader
+                }
+            }
+
+            public void SetData(Vector3 value, int verticesStartIndex, int count)
+            {
+                value.z = 1f;
+                for (int i = 0; i < count; ++i)
+                {
+                    data[verticesStartIndex + i] = value;
+                }
+            }
+
+            public void Rebuild()
+            {
+                mesh0.vertices = data;
+                for (int i = 0; i < verticesX2.Length; ++i)
+                {
+                    verticesX2[i] = data[i / 2];
+                    verticesX2[i].y *= i % 2;
+                }
+                mesh1.vertices = verticesX2;
+                mesh2.vertices = verticesX2;
+                for (int i = 0; i < verticesX4.Length; ++i)
+                {
+                    verticesX4[i] = data[i / 4];
+                }
+                mesh3.vertices = verticesX4;
+            }
+
+            public void Release()
+            {
+                UnityEngine.Object.DestroyImmediate(mesh0, false);
+                UnityEngine.Object.DestroyImmediate(mesh1, false);
+                UnityEngine.Object.DestroyImmediate(mesh2, false);
+                UnityEngine.Object.DestroyImmediate(mesh3, false);
+            }
         }
     }
 }

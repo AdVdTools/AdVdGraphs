@@ -43,12 +43,12 @@ namespace AdVd.Graphs
 
             EditorApplication.playModeStateChanged -= OnPlayModeChange;
 
-            for (int i = 0; i < buffers.Length; ++i)
+            for (int i = 0; i < meshSets.Length; ++i)
             {
-                if (buffers[i] != null)
+                if (meshSets[i] != null)
                 {
-                    buffers[i].Release();
-                    buffers[i] = null;
+                    meshSets[i].Release();
+                    meshSets[i] = null;
                 }
             }
         }
@@ -84,18 +84,18 @@ namespace AdVd.Graphs
 
         void OnValidate()
         {
-            if (buffers.Length < displayedGraphs.Count) Array.Resize(ref buffers, displayedGraphs.Count);
+            if (meshSets.Length < displayedGraphs.Count) Array.Resize(ref meshSets, displayedGraphs.Count);
             for (int i = 0; i < displayedGraphs.Count; ++i)
             {
                 Graph g = displayedGraphs[i];
                 if (g == null || g.Count == 0) continue;
-                g.FillBuffer(ref buffers[i]);
+                g.FillMeshData(ref meshSets[i]);
             }
-            for (int i = displayedGraphs.Count; i < buffers.Length; ++i)
+            for (int i = displayedGraphs.Count; i < meshSets.Length; ++i)
             {
-                if (buffers[i] == null) continue;
-                buffers[i].Release();
-                buffers[i] = null;
+                if (meshSets[i] == null) continue;
+                meshSets[i].Release();
+                meshSets[i] = null;
             }
         }
 
@@ -104,18 +104,18 @@ namespace AdVd.Graphs
         GraphSettings settings;
         Texture2D cogIcon;
         Material graphMaterial;
-        
+
         void LoadResources()
         {
             settings = GraphSettings.Instance;
             cogIcon = EditorGUIUtility.Load("Assets/AdVdGraphs/Editor/cog_icon.png") as Texture2D;
-            
+
             graphMaterial = new Material(Shader.Find("Hidden/AdVd/GraphShader"));
             graphMaterial.hideFlags = HideFlags.HideAndDontSave;
         }
 
         // Graph List Setup
-        void GraphListSetup () {
+        void GraphListSetup() {
             serializedWindow = new SerializedObject(this);
             graphsRList = new ReorderableList(serializedWindow, serializedWindow.FindProperty("displayedGraphs"), true, true, true, true);
             graphsRList.headerHeight = 0f;
@@ -176,7 +176,7 @@ namespace AdVd.Graphs
             cameraObject.SetActive(false);
 
             graphCamera = cameraObject.GetComponent<Camera>();
-            
+
             graphCamera.orthographic = true;
             graphCamera.backgroundColor = new Color(0.25f, 0.25f, 0.25f);
             graphCamera.cullingMask = 0;
@@ -201,12 +201,12 @@ namespace AdVd.Graphs
 
         [SerializeField] DivisionSlider divisions;
         [SerializeField] List<Graph> displayedGraphs = new List<Graph>();
-        ComputeBuffer[] buffers = new ComputeBuffer[1];
+        Graph.MeshSet[] meshSets = new Graph.MeshSet[1];
 
         void OnGUI()
         {
             Rect toolbarRect = EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
-            
+
             if (GUILayout.Button(new GUIContent("Clear All"), EditorStyles.toolbarButton))
             {
                 foreach (Graph g in displayedGraphs) if (g != null) g.Clear();
@@ -253,7 +253,7 @@ namespace AdVd.Graphs
         void GraphListGUI(Rect rect)
         {
             serializedWindow.Update();
-            
+
             graphsRList.DoList(rect);
 
             Event e = Event.current;
@@ -301,7 +301,7 @@ namespace AdVd.Graphs
         void GraphDisplayGUI(Rect rect)
         {
             EditorGUI.DrawRect(rect, new Color(0.3f, 0.3f, 0.3f));
-            
+
             // Draw graph
             if (graphCamera == null) Debug.LogWarning("Camera is null");
             else
@@ -309,49 +309,48 @@ namespace AdVd.Graphs
                 SetCamera();
                 Handles.SetCamera(graphCamera);
                 Handles.matrix = baseMatrix;
-                
+
                 Handles.DrawCamera(rect, graphCamera,
                                     DrawCameraMode.Normal);//Other than normal draws light/cam gizmos
                                                            //Draw handles
 
                 DrawGrid(graphRect);
-                
+
                 Vector2 rectRatio = new Vector2(100f / rect.width, 100f / rect.height);
 
-                if (buffers.Length < displayedGraphs.Count) Array.Resize(ref buffers, displayedGraphs.Count);
+                if (meshSets.Length < displayedGraphs.Count) Array.Resize(ref meshSets, displayedGraphs.Count);
                 for (int i = 0; i < displayedGraphs.Count; ++i)
                 {
                     Graph g = displayedGraphs[i];
                     if (g == null || g.Count == 0) continue;
-                    if (g.IsDirty() || buffers[i] == null) g.FillBuffer(ref buffers[i]);
-                    if (buffers[i] == null) return;
-
-                    graphMaterial.SetBuffer("buffer", buffers[i]);
+                    if (g.IsDirty() || meshSets[i] == null) g.FillMeshData(ref meshSets[i]);
+                    if (meshSets[i] == null) return;
+                    
                     graphMaterial.SetColor("_Color", g.color);
                     graphMaterial.SetVector("_Transform", new Vector4(g.offset.x, g.offset.y, g.scale.x, g.scale.y));
                     if (g.DrawLines)
                     {
                         graphMaterial.SetPass(0);
-                        Graphics.DrawProcedural(MeshTopology.LineStrip, g.Count);
+                        Graphics.DrawMeshNow(meshSets[i].mesh0, Matrix4x4.identity);
                     }
                     if (g.DrawBars)
                     {
                         graphMaterial.SetPass(1);
-                        Graphics.DrawProcedural(MeshTopology.Lines, g.Count * 2);
+                        Graphics.DrawMeshNow(meshSets[i].mesh1, Matrix4x4.identity);
                     }
                     if (g.DrawArea)
                     {
                         graphMaterial.SetPass(2);
-                        Graphics.DrawProcedural(MeshTopology.Quads, g.Count * 6 - 6);
+                        Graphics.DrawMeshNow(meshSets[i].mesh2, Matrix4x4.identity);
                     }
                     if (g.DrawPoints)
                     {
                         graphMaterial.SetTexture("_MainTex", g.markerTex != null ? g.markerTex : settings.defaultPointMarker);
                         graphMaterial.SetVector("_MarkerSize", rectRatio * g.markerSize);
                         graphMaterial.SetPass(3);
-                        Graphics.DrawProcedural(MeshTopology.Quads, g.Count * 6);
+                        Graphics.DrawMeshNow(meshSets[i].mesh3, Matrix4x4.identity);
                     }
-                    
+
                     Vector2 mousePosition = Event.current.mousePosition;
                     foreach (Vector2 dataPoint in g)
                     {
@@ -369,8 +368,8 @@ namespace AdVd.Graphs
                         }
                     }
                 }
-                
-                
+
+
                 if ((Event.current.button == 1 || Event.current.button == 2) && Event.current.type == EventType.MouseDrag)
                 {
                     Vector2 delta = Event.current.delta;
@@ -438,7 +437,7 @@ namespace AdVd.Graphs
 
             float stepX = GetPrevPower(graphView.width * 1f) / 5;
             float stepY = GetPrevPower(graphView.height * 1f) / 5;
-            
+
             float xMin = graphView.xMin, xMax = graphView.xMax;
             float yMin = graphView.yMin, yMax = graphView.yMax;
 
@@ -507,7 +506,7 @@ namespace AdVd.Graphs
             }
             return power;
         }
-        
+
 
         GenericMenu GetGenericMenu()
         {

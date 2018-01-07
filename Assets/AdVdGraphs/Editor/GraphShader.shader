@@ -24,6 +24,11 @@
 			
 			#include "UnityCG.cginc"
 			
+			struct appdata
+			{
+				float4 vertex : POSITION;
+			};
+
 			struct v2f
 			{
 				float2 uv : TEXCOORD0;
@@ -32,14 +37,13 @@
 
 			float4 _Color;
 			float4 _Transform;
-			StructuredBuffer<float2> buffer;
 			
-			v2f vert (uint id: SV_VertexID)
+			v2f vert (appdata v)
 			{
 				v2f o;
 				float3 vertex = float3(
-					_Transform.x + _Transform.z * buffer[id].x,
-					_Transform.y + _Transform.w * buffer[id].y, 1);
+					_Transform.x + _Transform.z * v.vertex.x,
+					_Transform.y + _Transform.w * v.vertex.y, 1);
 				o.vertex = UnityObjectToClipPos(vertex);
 				o.uv = float2(0, 0);
 				return o;
@@ -61,7 +65,12 @@
 			#pragma fragment frag
 			
 			#include "UnityCG.cginc"
-			
+
+			struct appdata
+			{
+				float4 vertex : POSITION;
+			};
+
 			struct v2f
 			{
 				float2 uv : TEXCOORD0;
@@ -70,15 +79,13 @@
 
 			float4 _Color;
 			float4 _Transform;
-			StructuredBuffer<float2> buffer;
 			
-			v2f vert (uint id: SV_VertexID)
+			v2f vert (appdata v)
 			{
 				v2f o;
-				uint i = id / 2;
 				float3 vertex = float3(
-					_Transform.x + _Transform.z * buffer[i].x,
-					(_Transform.y + _Transform.w * buffer[i].y) * ((id % 2) == 0), 1);
+					_Transform.x + _Transform.z * v.vertex.x,
+					_Transform.y + _Transform.w * v.vertex.y, 1);
 				o.vertex = UnityObjectToClipPos(vertex);
 				o.uv = float2(0, 0);
 				return o;
@@ -100,7 +107,12 @@
 			#pragma fragment frag
 			
 			#include "UnityCG.cginc"
-			
+
+			struct appdata
+			{
+				float4 vertex : POSITION;
+			};
+
 			struct v2f
 			{
 				float2 uv : TEXCOORD0;
@@ -112,20 +124,15 @@
 
 			float4 _Color;
 			float4 _Transform;
-			StructuredBuffer<float2> buffer;
 			
-			v2f vert (uint id: SV_VertexID)
+			v2f vert (appdata v)
 			{
 				v2f o;
-				uint next = ((id + 1) % 6) / 3;
-				uint zero = (id % 2);
-				uint i = id / 6 + next;
-				
 				float3 vertex = float3(
-					_Transform.x + _Transform.z * buffer[i].x,
-					(_Transform.y + _Transform.w * buffer[i].y) * (1 - zero), 1);
+					_Transform.x + _Transform.z * v.vertex.x,
+					_Transform.y + _Transform.w * v.vertex.y, 1);
 				o.vertex = UnityObjectToClipPos(vertex);
-				o.uv = float2(next, zero);
+				o.uv = float2(0, 0);
 				return o;
 			}
 			
@@ -146,7 +153,13 @@
 			#pragma fragment frag
 			
 			#include "UnityCG.cginc"
-			
+
+			struct appdata
+			{
+				float4 vertex : POSITION;
+				float2 uv : TEXCOORD0;
+			};
+
 			struct v2f
 			{
 				float2 uv : TEXCOORD0;
@@ -159,24 +172,20 @@
 			float4 _Color;
 			float4 _MarkerSize;
 			float4 _Transform;
-			StructuredBuffer<float2> buffer;
 			
-			v2f vert (uint id: SV_VertexID)
+			v2f vert (appdata v)
 			{
 				v2f o;
-				uint next = ((id + 1) % 6) / 3;
-				uint zero = (id % 2);
-				uint i = id / 6;
 
-				float3 offset = float3(-0.5 + next, -0.5 + zero, 0) * 0.2;
+				float3 offset = float3(-0.5 + v.uv.x, -0.5 + v.uv.y, 0) * 0.2;
 				
 				float3 vertex = float3(
-					_Transform.x + _Transform.z * buffer[i].x,
-					_Transform.y + _Transform.w * buffer[i].y, 1);
+					_Transform.x + _Transform.z * v.vertex.x,
+					_Transform.y + _Transform.w * v.vertex.y, 1);
 				o.vertex = UnityObjectToClipPos(vertex);
 				o.vertex.x += offset.x * _MarkerSize.x;
 				o.vertex.y += offset.y * _MarkerSize.y;
-				o.uv = float2(next, zero);
+				o.uv = v.uv;
 				return o;
 			}
 			
